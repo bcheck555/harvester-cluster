@@ -1,0 +1,80 @@
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Terraform.gitlab-ci.yml
+
+include:
+  - template: Terraform/Base.gitlab-ci.yml  # https://gitlab.com/gitlab-org/gitlab/blob/master/lib/gitlab/ci/templates/Terraform/Base.gitlab-ci.yml
+#  - template: Jobs/SAST-IaC.gitlab-ci.yml   # https://gitlab.com/gitlab-org/gitlab/blob/master/lib/gitlab/ci/templates/Jobs/SAST-IaC.gitlab-ci.yml
+
+variables:
+  #If your terraform files are in a subdirectory, set TF_ROOT accordingly. For example:
+  TF_ROOT: terraform
+  #TF_ROOT: ${CI_PROJECT_DIR}  # The relative path to the root directory of the Terraform project
+  TF_STATE_NAME: default
+  TF_CACHE_KEY: default
+
+# generate harvester cloud kubeconfig
+  RANCHER_SERVER_URL: var.RANCHER_SERVER_URL
+  RANCHER_ACCESS_KEY: var.RANCHER_ACCESS_KEY
+  RANCHER_SECRET_KEY: var.RANCHER_SECRET_KEY
+  HARVESTER_CLUSTER_ID: var.HARVESTER_CLUSTER_ID
+  CLUSTER_NAME: var.CLUSTER_NAME
+
+default:
+  before_script:
+    - cp ./packet.loss.crt /usr/local/share/ca-certificates/
+    - update-ca-certificates
+#    - curl -k -X POST ${RANCHER_SERVER_URL}/k8s/clusters/${HARVESTER_CLUSTER_ID}/v1/harvester/kubeconfig -H 'Content-Type: application/json' -u ${RANCHER_ACCESS_KEY}:${RANCHER_SECRET_KEY} -d '{"clusterRoleName": "harvesterhci.io:cloudprovider", "namespace": "default", "serviceAccountName": "'${CLUSTER_NAME}'"}' | xargs | sed 's/\\n/\n/g' > ${CLUSTER_NAME}-kubeconfig
+
+stages:
+  - validate
+  - build
+  - deploy
+  - destroy
+
+image: registry.gitlab.com/gitlab-org/terraform-images/branches/alexand-master-patch-1ad6-1.5:12db7214dcc2e2ec5b7e7be4dd54a0e58f76bc9b
+
+terraform:validate: &terraform_validate
+  tags:
+    - docker
+  stage: validate
+  script:
+    - cd "${TF_ROOT}"
+    - gitlab-terraform validate
+
+terraform:build: &terraform_build
+  tags:
+    - docker
+  stage: build
+  script:
+    - cd "${TF_ROOT}"
+    - gitlab-terraform init
+    - gitlab-terraform plan
+    - gitlab-terraform plan-json
+  resource_group: ${TF_STATE_NAME}
+  artifacts:
+    paths:
+      - ${TF_ROOT}/plan.cache
+    reports:
+      terraform: ${TF_ROOT}/plan.json
+
+terraform:deploy: &terraform_deploy
+  tags:
+    - docker
+  stage: deploy
+  script:
+    - cd "${TF_ROOT}"
+    - gitlab-terraform apply
+  resource_group: ${TF_STATE_NAME}
+  when: manual
+
+terraform:destroy: &terraform_destroy
+  tags:
+    - docker
+  stage: destroy
+  script:
+    - cd "${TF_ROOT}"
+    - gitlab-terraform destroy
+  resource_group: ${TF_STATE_NAME}
+  when: manual
