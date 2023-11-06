@@ -1,35 +1,41 @@
-## Rancher
+### Rancher
 RANCHER_URL = "https://rancher.packet.loss:4343"
 RANCHER_CLOUD_CREDENTIAL = "harvester1"
+RANCHER_CNI = "canal"
 
-
-## Cluster Config
+### Cluster Config
 CLUSTER_NAME = "bc-test"
-RKE2VERSION = "v1.23.17+rke2r1"
-#DOCKERURL = "https://releases.rancher.com/install-docker/19.03.sh"
+CLUSTER_NAMESPACE = "fleet-default"
+K8S_VERSION = "v1.26.8+rke2r1"
+CLUSTER_ROLE = "user"
 
-## Harvester
-HARVESTER_CLUSTER_ID = "c-m-r4btfl67"
+### Harvester
+HARVESTER_CLUSTER_ID = "c-m-6zh8gllf"
+HARVESTER_NAMESPACE = "default"
 
-## Controller Node Config 
-CN_NUMNODES = 1
-CN_TEMPLATE = "default/image-stv28"
+### Controller Node Config
+CN_POOL_NAME = "pool1"
+CN_SSH_USER = "cloud-user"
+CN_NUMNODES = 3
 CN_CPUCOUNT = 2
 CN_MEMORY = 4   #GB
 CN_DISKSIZE = 40   #GB
+CN_TEMPLATE = "default/image-tw8kb"
 CN_NETWORK = "default/vlan20"
 
-## Worker Node Config 
-WN_NUMNODES = 1
-WN_TEMPLATE = "default/image-stv28"
-WN_CPUCOUNT = 8
+### Worker Node Config
+WN_POOL_NAME = "pool2"
+WN_SSH_USER = "cloud-user"
+WN_NUMNODES = 3
+WN_CPUCOUNT = 4
 WN_MEMORY = 32  #GB
 WN_DISKSIZE = 100   #GB
-WN_NETWORK = "default/vlan20"
+WN_TEMPLATE = "default/image-tw8kb"
+WN_NETWORK = "default/vlan20" 
 
-## Logging and Monitoring
+### Logging and Monitoring
 # Monitoring chart
-MONCHART = "9.4.202"
+MONCHART = "102.0.2+up40.1.2"
 # Logging chart
 LOGCHART = "3.8.201"
 # Time to wait for Kubernetes to deploy before installing

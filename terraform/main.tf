@@ -9,13 +9,14 @@ data "rancher2_cloud_credential" "cloud_credential" {
 resource "rancher2_machine_config_v2" "cn" {
   generate_name = "cn-config"
   harvester_config {
-    vm_namespace = "default"
+    vm_namespace = var.HARVESTER_NAMESPACE
+    ssh_user = var.CN_SSH_USER
     cpu_count = var.CN_CPUCOUNT
     memory_size = var.CN_MEMORY
     disk_info = <<EOF
     {
         "disks": [{
-          "imageName": "default/image-stv28",
+          "imageName": "default/image-tw8kb",
           "size": 40,
           "bootOrder": 1
         }]
@@ -24,23 +25,19 @@ resource "rancher2_machine_config_v2" "cn" {
     network_info = <<EOF
     {
         "interfaces": [{
-          "networkName": "default/vlan20"
+          "networkName": "default/vlan20" 
         }]
     }
     EOF
-    ssh_user = "ubuntu"
     user_data = <<EOF
     #cloud-config
-    disable_root: false
-    chpasswd:
-    list: |
-        root:password
-    expire: false
     package_update: true
     packages:
-    - qemu-guest-agent
+      - qemu-guest-agent
+      - iptables
     runcmd:
-    - systemctl enable --now qemu-guest-agent
+      - - systemctl enable --now qemu-guest-agent
+    final_message: Ready, Set, GO!
     EOF
   }
 }
@@ -48,13 +45,14 @@ resource "rancher2_machine_config_v2" "cn" {
 resource "rancher2_machine_config_v2" "wn" {
   generate_name = "wn-config"
   harvester_config {
-    vm_namespace = "default"
+    vm_namespace = var.HARVESTER_NAMESPACE
+    ssh_user = var.WN_SSH_USER
     cpu_count = var.WN_CPUCOUNT
     memory_size = var.WN_MEMORY
     disk_info = <<EOF
     {
         "disks": [{
-          "imageName": "default/image-stv28",
+          "imageName": "default/image-tw8kb",
           "size": 100,
           "bootOrder": 1
         }]
@@ -67,19 +65,15 @@ resource "rancher2_machine_config_v2" "wn" {
         }]
     }
     EOF
-    ssh_user = "ubuntu"
     user_data = <<EOF
     #cloud-config
-    disable_root: false
-    chpasswd:
-    list: |
-        root:password
-    expire: false
     package_update: true
     packages:
-    - qemu-guest-agent
+      - qemu-guest-agent
+      - iptables
     runcmd:
-    - systemctl enable --now qemu-guest-agent
+      - - systemctl enable --now qemu-guest-agent
+    final_message: Ready, Set, GO!
     EOF
   }
 }
@@ -87,12 +81,13 @@ resource "rancher2_machine_config_v2" "wn" {
 # Create a new harvester rke2 cluster with harvester cloud provider
 resource "rancher2_cluster_v2" "cluster" {
   name = var.CLUSTER_NAME
-  kubernetes_version = var.RKE2VERSION
+  #fleet_namespace = var.CLUSTER_NAMESPACE
+  kubernetes_version = var.K8S_VERSION
   enable_network_policy = false
-  default_cluster_role_for_project_members = "user"
+  default_cluster_role_for_project_members = var.CLUSTER_ROLE
   rke_config {
     machine_pools {
-      name = "pool1"
+      name = var.CN_POOL_NAME
       cloud_credential_secret_name = data.rancher2_cloud_credential.cloud_credential.id
       control_plane_role = true
       etcd_role = true
@@ -106,7 +101,7 @@ resource "rancher2_cluster_v2" "cluster" {
     }
     # Each machine pool must be passed separately
     machine_pools {
-      name = "pool2"
+      name = var.WN_POOL_NAME
       cloud_credential_secret_name = data.rancher2_cloud_credential.cloud_credential.id
       control_plane_role = false
       etcd_role = false
@@ -117,16 +112,14 @@ resource "rancher2_cluster_v2" "cluster" {
         kind = rancher2_machine_config_v2.wn.kind
         name = rancher2_machine_config_v2.wn.name
       }
-    }    
+    }
     machine_selector_config {
       config = <<EOF
-        kubelet-arg:
-          - cloud-provider-config = file("${path.module}/kubeconfig")
-          - cloud-provider-name = harvester
+        cloud-provider-name: ""
     EOF
     }
     machine_global_config = <<EOF
-cni: "calico"
+cni: "canal"
 disable-kube-proxy: false
 etcd-expose-metrics: false
 EOF
@@ -140,8 +133,26 @@ EOF
     }
     chart_values = <<EOF
 harvester-cloud-provider:
-  clusterName: var.CLUSTER_NAME
   cloudConfigPath: /var/lib/rancher/rke2/etc/config-files/cloud-provider-config
+  clusterName: bc-test
 EOF
   }
+}
+
+data "rancher2_cluster_v2" "cluster" {
+  name = var.CLUSTER_NAME
+  #fleet_namespace = "fleet-ns"
+}
+
+resource "rancher2_app_v2" "rancher-monitoring" {
+  cluster_id = data.rancher2_cluster_v2.cluster.id
+  name = "rancher-monitoring"
+  namespace = "cattle-monitoring-system"
+  repo_name = "rancher-charts"
+  chart_name = "rancher-monitoring"
+  chart_version = "102.0.2+up40.1.2"
+  #values = file("values.yaml")
+  depends_on = [
+    rancher2_cluster_v2.cluster
+  ]
 }
