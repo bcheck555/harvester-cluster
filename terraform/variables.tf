@@ -37,13 +37,11 @@ variable "WN_NETWORK" { }
 
 ## Logging and Monitoring
 # Monitoring chart
-variable "MONCHART" {
-	default = "9.4.202"
-}
-# Logging chart
-variable "LOGCHART" {
-	default = "3.8.201"
-}
+variable "MONITOR_CHART" { }
+# Istio chart
+variable "ISTIO_CHART" { }
+# Longhorn chart
+variable "LONGHORN_CHART" { }
 # Time to wait for Kubernetes to deploy before installing
 variable "DELAYSEC" {
 	default = 780

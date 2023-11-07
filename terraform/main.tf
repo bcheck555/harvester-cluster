@@ -16,7 +16,7 @@ resource "rancher2_machine_config_v2" "cn" {
     disk_info = <<EOF
     {
         "disks": [{
-          "imageName": "default/image-tw8kb",
+          "imageName": "default/image-stv28",
           "size": 40,
           "bootOrder": 1
         }]
@@ -52,7 +52,7 @@ resource "rancher2_machine_config_v2" "wn" {
     disk_info = <<EOF
     {
         "disks": [{
-          "imageName": "default/image-tw8kb",
+          "imageName": "default/image-stv28",
           "size": 100,
           "bootOrder": 1
         }]
@@ -69,8 +69,9 @@ resource "rancher2_machine_config_v2" "wn" {
     #cloud-config
     package_update: true
     packages:
-      - qemu-guest-agent
       - iptables
+      - open-iscsi
+      - qemu-guest-agent
     runcmd:
       - - systemctl enable --now qemu-guest-agent
     final_message: Ready, Set, GO!
@@ -139,20 +140,46 @@ EOF
   }
 }
 
-data "rancher2_cluster_v2" "cluster" {
-  name = var.CLUSTER_NAME
-  #fleet_namespace = "fleet-ns"
-}
-
 resource "rancher2_app_v2" "rancher-monitoring" {
-  cluster_id = data.rancher2_cluster_v2.cluster.id
+  cluster_id = rancher2_cluster_v2.cluster.cluster_v1_id
   name = "rancher-monitoring"
   namespace = "cattle-monitoring-system"
   repo_name = "rancher-charts"
   chart_name = "rancher-monitoring"
-  chart_version = "102.0.2+up40.1.2"
-  #values = file("values.yaml")
-  depends_on = [
-    rancher2_cluster_v2.cluster
-  ]
+  chart_version = var.MONITOR_CHART
+  values = <<EOF
+alertmanager:
+  alertmanagerSpec:
+    enabled: false
+    useExistingSecret: true
+    configSecret: alertmanager-rancher-monitoring-alertmanager
+prometheus:
+  prometheusSpec:
+    requests:
+      cpu: "250m"
+      memory: "250Mi"
+EOF
+depends_on = [ rancher2_cluster_v2.cluster ]
+}
+
+resource "rancher2_app_v2" "rancher-istio" {
+  cluster_id = rancher2_cluster_v2.cluster.cluster_v1_id
+  name = "rancher-istio"
+  namespace = "istio-system"
+  repo_name = "rancher-charts"
+  chart_name = "rancher-istio"
+  chart_version = var.ISTIO_CHART
+  #values = 
+  depends_on = [rancher2_app_v2.rancher-monitoring] # Rancher-istio requires rancher-monitoring
+}
+
+resource "rancher2_app_v2" "longhorn" {
+  cluster_id = rancher2_cluster_v2.cluster.cluster_v1_id
+  name = "rancher-longhorn"
+  namespace = "longhorn-system"
+  repo_name = "rancher-charts"
+  chart_name = "longhorn"
+  chart_version = var.LONGHORN_CHART
+  #values =
+  depends_on = [ rancher2_cluster_v2.cluster ]
 }

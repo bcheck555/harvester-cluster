@@ -11,19 +11,22 @@ Edit variables in terraform.tfvars as needed.
 - Connection to Rancher
 - Provisioning virtual machines
 - Seperate configs for control and worker nodes
-- Cluster creation with rhel-8.8-x86_64-kvm.qcow2
-- Cluster creation with rhel-9.2-x86_64-kvm.qcow2
+- App installation
 
 ### Not Working
-- Cluster creation with opensuse-leap-15.5-minimal-vm.x86_64-cloud.qcow2
-- App installation (bug? tries to pull cluster schema from https://rancher.packet.loss:4343/v3/clusters/fleet-default/bc-test, it should be https://rancher.packet.loss:4343/v3/clusters/c-m-qjxx7tn7) 
-- Lots!
+- Lots
 
 ### TODO
 - Figure out autoscaling
 - Figure out lifecycle to ignore node scaling done via UI
-- App installation
 - Certificates
+- Seperate values.yaml for app install
+
+### NOTES
+- opensuse-leap-15.5-minimal-vm.x86_64-cloud.qcow2 easiest to get everything working on (with latest Rancher, issues with Harvester v1.2.0+ and Rancher < v2.7.9ish)
+- Istio requires Rancher Monitoring
+- Longhorn requires open-iscsi on the nodes
+- Iptables is needed on the nodes
 
 ### VERSIONS
 - Rancher v2.7.9
