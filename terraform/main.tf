@@ -140,46 +140,8 @@ EOF
   }
 }
 
-resource "rancher2_app_v2" "rancher-monitoring" {
-  cluster_id = rancher2_cluster_v2.cluster.cluster_v1_id
-  name = "rancher-monitoring"
-  namespace = "cattle-monitoring-system"
-  repo_name = "rancher-charts"
-  chart_name = "rancher-monitoring"
-  chart_version = var.MONITOR_CHART
-  values = <<EOF
-alertmanager:
-  alertmanagerSpec:
-    enabled: false
-    useExistingSecret: true
-    configSecret: alertmanager-rancher-monitoring-alertmanager
-prometheus:
-  prometheusSpec:
-    requests:
-      cpu: "250m"
-      memory: "250Mi"
-EOF
-depends_on = [ rancher2_cluster_v2.cluster ]
-}
 
-resource "rancher2_app_v2" "rancher-istio" {
-  cluster_id = rancher2_cluster_v2.cluster.cluster_v1_id
-  name = "rancher-istio"
-  namespace = "istio-system"
-  repo_name = "rancher-charts"
-  chart_name = "rancher-istio"
-  chart_version = var.ISTIO_CHART
-  #values = 
-  depends_on = [rancher2_app_v2.rancher-monitoring] # Rancher-istio requires rancher-monitoring
-}
 
-resource "rancher2_app_v2" "longhorn" {
-  cluster_id = rancher2_cluster_v2.cluster.cluster_v1_id
-  name = "rancher-longhorn"
-  namespace = "longhorn-system"
-  repo_name = "rancher-charts"
-  chart_name = "longhorn"
-  chart_version = var.LONGHORN_CHART
-  #values =
-  depends_on = [ rancher2_cluster_v2.cluster ]
-}
+
+
+

@@ -11,7 +11,7 @@ variables:
   #If your terraform files are in a subdirectory, set TF_ROOT accordingly. For example:
   TF_ROOT: terraform
   #TF_ROOT: ${CI_PROJECT_DIR}  # The relative path to the root directory of the Terraform project
-  TF_STATE_NAME: default
+  TF_STATE_NAME: ${CI_PROJECT_NAME}
   TF_CACHE_KEY: default
 
 # generate harvester cloud kubeconfig

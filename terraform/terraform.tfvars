@@ -34,11 +34,16 @@ WN_TEMPLATE = "default/image-stv28"
 WN_NETWORK = "default/vlan20" 
 
 ### Logging and Monitoring
-# Monitoring chart
-MONITOR_CHART = "102.0.2+up40.1.2"
+# ArgoCD chart
+ARGOCD_CHART = "5.51.0"
+# Cert-Manager chart
+CERT_MANAGER_CHART = "v1.13.2"
 # Istio chart
 ISTIO_CHART = "102.3.1+up1.18.2"
 # Longhorn chart
 LONGHORN_CHART = "102.3.0+up1.5.1"
+# Monitoring chart
+MONITOR_CHART = "102.0.2+up40.1.2"
+
 # Time to wait for Kubernetes to deploy before installing
 DELAYSEC = 780
